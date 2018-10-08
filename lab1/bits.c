@@ -19,17 +19,17 @@
  *
  * STEP 1: Fill in the following struct with your identifying info.
  */
-team_struct team = 516051910027
+team_struct team = 
 {
     /* Team name: Replace with either:
       Your login ID if working as a one person team
       or, ID1+ID2 where ID1 is the login ID of the first team member
       and ID2 is the login ID of the second team member */
-    "",
+    "516051910027",
     /* Student name 1: Replace with the full name of first team member */
-    "",
+    "YUAN Qichao",
     /* Login ID 1: Replace with the login ID of first team member */
-    "",
+    "516051910027",
 
     /* The following should only be changed if there are two team members */
     /* Student name 2: Full name of the second team member */
@@ -174,7 +174,12 @@ NOTES:
  *   Rating: 4 
  */
 int bang(int x) {
-  return 2;
+  x |= x >> 16;
+  x |= x >> 8;
+  x |= x >> 4;
+  x |= x >> 2;
+  x |= x >> 1;
+  return ~x & 1;
 }
 /*
  * bitCount - returns count of number of 1's in word
@@ -184,7 +189,19 @@ int bang(int x) {
  *   Rating: 4
  */
 int bitCount(int x) {
-  return 2;
+  int m1 = 0x11 | (0x11 << 8);
+  int mask = m1 | (m1 << 16);
+  int s = x & mask;
+  s += x>>1 & mask;
+  s += x>>2 & mask;
+  s += x>>3 & mask;
+  /* Now combine high and low order sums */
+  s = s + (s >> 16);
+  /* Low order 16 bits now consists of 4 sums.
+  Split into two groups and sum */
+  mask = 0xF | (0xF << 8);   // check  | -> ||
+  s = (s & mask) + ((s >> 4) & mask);
+  return (s + (s>>8)) & 0x3F;
 }
 /* 
  * copyLSB - set all bits of result to least significant bit of x
@@ -194,7 +211,10 @@ int bitCount(int x) {
  *   Rating: 2
  */
 int copyLSB(int x) {
-  return 2;
+  int mask = 0x1;
+  int m1 = x & mask;
+  int m2 = (m1<<31)>>31;
+  return m2;
 }
 /* 
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
@@ -214,7 +234,8 @@ int divpwr2(int x, int n) {
  *   Rating: 2
  */
 int evenBits(void) {
-  return 2;
+  int m = 0x55;
+  return (m << 24)|(m << 16)|(m << 8)|m;
 }
 /* 
  * fitsBits - return 1 if x can be represented as an 
@@ -237,7 +258,8 @@ int fitsBits(int x, int n) {
  *   Rating: 2
  */
 int getByte(int x, int n) {
-  return 2;
+  int m = x >> (n << 3);
+  return m & 0xFF;
 }
 /* 
  * isGreater - if x > y  then return 1, else return 0 
@@ -257,7 +279,8 @@ int isGreater(int x, int y) {
  *   Rating: 3
  */
 int isNonNegative(int x) {
-  return 2;
+  int m = x >> 31;
+  return !m;
 }
 /* 
  * isNotEqual - return 0 if x == y, and 1 otherwise 
@@ -267,7 +290,8 @@ int isNonNegative(int x) {
  *   Rating: 2
  */
 int isNotEqual(int x, int y) {
-  return 2;
+  int z = x + (~y) + 1;
+  return !!z;
 }
 /*
  * isPower2 - returns 1 if x is a power of 2, and 0 otherwise
@@ -289,7 +313,7 @@ int isPower2(int x) {
  *   Rating: 4 
  */
 int leastBitPos(int x) {
-  return 2;
+  return x & (~x+1);
 }
 /* 
  * logicalShift - shift x to the right by n, using a logical shift
@@ -300,7 +324,10 @@ int leastBitPos(int x) {
  *   Rating: 3 
  */
 int logicalShift(int x, int n) {
-  return 2;
+  int mask = 0x01 << 31;
+  int m1 = x >> n;
+  int m2 = ((~mask >> n) << 1 ) + 1;
+  return m1 & m2;
 }
 /*
  * satAdd - adds two numbers but when positive overflow occurs, returns
@@ -325,5 +352,8 @@ int satAdd(int x, int y) {
  *   Rating: 4
  */
 int tc2sm(int x) {
-  return 2;
+  int y = x >> 31 ;
+  int m1 = y & 1;
+  int m2 = (x + y) ^y;
+  return (m1 << 31) | m2;
 }
