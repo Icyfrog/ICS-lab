@@ -226,9 +226,11 @@ int copyLSB(int x) {
  *   Rating: 2
  */
 int divpwr2(int x, int n) {
-    int signMask = x >> 31;
-    return (x + (signMask & ((1 << n) + ~0))) >> n;
-    //分类讨论，如果x >= 0, 那么 x/(2^n) = x >> n；如果 x < 0, 那么x/(2^n) = (x + (1 << n) - 1) >> n; 现在构造一个数 bias 使得在 x >= 0时，bias = 0；在 x < 0 时，bias = (1 << n) - 1; signMask = x >> 31, 表示如果x负数则，signMask = 0xFFFFFFFF；否则signMask = 0x0。所以 bias = signMask & (1 << n) + ～0) 。其中～0 = -1。
+    int sign_x = x >> 31;
+    return (x + (sign_x & ((1 << n) + ~0))) >> n;
+    //分类讨论，如果x >= 0, 那么 x/(2^n) = x >> n；如果 x < 0, 那么x/(2^n) = (x + (1 << n) - 1) >> n;
+    // 现在构造一个数 bias 使得在 x >= 0时，bias = 0；在 x < 0 时，bias = (1 << n) - 1; 
+    //signMask = x >> 31, 表示如果x负数则，sign_x = 0xFFFFFFFF；否则sign_x = 0x0。所以 bias = signMask & (1 << n) + ～0) 
   //blog.csdn.net/qq_19762007/article/details/80038755?utm_source=copy 
 
 }
@@ -239,7 +241,7 @@ int divpwr2(int x, int n) {
  *   Rating: 2
  */
 int evenBits(void) {
-  int m = 0x55;
+  int m = 0x55;         // 01010101
   return (m << 24)|(m << 16)|(m << 8)|m;
 }
 /* 
@@ -265,7 +267,7 @@ int fitsBits(int x, int n) {  // 也就是说，最后检测的是 move 32-n位�
  *   Rating: 2
  */
 int getByte(int x, int n) {
-  int m = x >> (n << 3);
+  int m = x >> (n << 3); //  n*8 -> n << 3; 然后m再右移n*8，就将目标放到了最后两个byte
   return m & 0xFF;
 }
 /* 
@@ -291,7 +293,7 @@ int isGreater(int x, int y) {
  *   Rating: 3
  */
 int isNonNegative(int x) {
-  int m = x >> 31;
+  int m = x >> 31;        // 取首位就好
   return !m;
 }
 /* 
@@ -340,7 +342,7 @@ int isPower2(int x){
  *   Rating: 4 
  */
 int leastBitPos(int x) {
-  return x & (~x+1);
+  return x & (~x+1);        // ~x+1 就只与x有最后一个相同位置的1，其他就正好相反
 }
 /* 
  * logicalShift - shift x to the right by n, using a logical shift
@@ -351,8 +353,8 @@ int leastBitPos(int x) {
  *   Rating: 3 
  */
 int logicalShift(int x, int n) {
-  int mask = 0x01 << 31;
-  int m1 = x >> n;
+  int mask = 0x01 << 31;      // 0x1000...
+  int m1 = x >> n;            // m1就是sign_x
   int m2 = ((~mask >> n) << 1 ) + 1;
   return m1 & m2;
 }
