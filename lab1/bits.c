@@ -174,12 +174,13 @@ NOTES:
  *   Rating: 4 
  */
 int bang(int x) {
-  x |= x >> 16;
-  x |= x >> 8;
-  x |= x >> 4;
+  // 等价于寻找x转化为二进制后，有没有 1
+  x |= x >> 16;   // 用后16位包括了整个数字有没有1的信息
+  x |= x >> 8;    // 同上，折叠到8位
+  x |= x >> 4;    // ...
   x |= x >> 2;
-  x |= x >> 1;
-  return ~x & 1;
+  x |= x >> 1;    // 最后折叠到最后一位
+  return ~x & 1;  // 返回的只能为1或0，所以&1；表示的是！，所以用~
 }
 /*
  * bitCount - returns count of number of 1's in word
@@ -211,9 +212,9 @@ int bitCount(int x) {
  *   Rating: 2
  */
 int copyLSB(int x) {
-  int mask = 0x1;
-  int m1 = x & mask;
-  int m2 = (m1<<31)>>31;
+  int mask = 0x1;           // mask code 0x1
+  int m1 = x & mask;        // 保留了最后一位
+  int m2 = (m1<<31)>>31;    // 将最后一位复制到全部32位
   return m2;
 }
 /* 
@@ -225,7 +226,11 @@ int copyLSB(int x) {
  *   Rating: 2
  */
 int divpwr2(int x, int n) {
-    return 2;
+    int signMask = x >> 31;
+    return (x + (signMask & ((1 << n) + ~0))) >> n;
+    //分类讨论，如果x >= 0, 那么 x/(2^n) = x >> n；如果 x < 0, 那么x/(2^n) = (x + (1 << n) - 1) >> n; 现在构造一个数 bias 使得在 x >= 0时，bias = 0；在 x < 0 时，bias = (1 << n) - 1; signMask = x >> 31, 表示如果x负数则，signMask = 0xFFFFFFFF；否则signMask = 0x0。所以 bias = signMask & (1 << n) + ～0) 。其中～0 = -1。
+  //blog.csdn.net/qq_19762007/article/details/80038755?utm_source=copy 
+
 }
 /* 
  * evenBits - return word with all even-numbered bits set to 1
@@ -246,9 +251,11 @@ int evenBits(void) {
  *   Max ops: 15
  *   Rating: 2
  */
-int fitsBits(int x, int n) {
-  return 2;
-}
+int fitsBits(int x, int n) {  // 也就是说，最后检测的是 move 32-n位后，会不会改变x的值
+  int m1 = 32 + (~n + 1);   // equal m1 = 32-n
+  int m2 = (x << m1) >> m1; // m2 equals sign-filling x 
+  return !(x^m2);          // if so, x == sign-filling x
+}   // Reference:https://stackoverflow.com/questions/42790409/bitwise-operation-fitsbits
 /* 
  * getByte - Extract byte n from word x
  *   Bytes numbered from 0 (LSB) to 3 (MSB)
@@ -269,7 +276,12 @@ int getByte(int x, int n) {
  *   Rating: 3
  */
 int isGreater(int x, int y) {
-  return 2;
+  int z = x + (~y);     // z = x-y-1
+  int sign_x = x >> 31;
+  int sign_y = y >> 31;
+  int m1 = !!(sign_y & (!sign_x));   // x>0 && y<0 -> x>y
+  int m2 = (!(z >> 31)) & (!(sign_x ^ sign_y));  // x>y>0 or 0>x>y
+  return m1 | m2;
 }
 /* 
  * isNonNegative - return 1 if x >= 0, return 0 otherwise 
@@ -301,9 +313,24 @@ int isNotEqual(int x, int y) {
  *   Max ops: 60
  *   Rating: 4
  */
-int isPower2(int x) {
-  return 2;
+int isPower2(int x){
+  // 只能出现1个1
+  int m1 = x >> 31;   // 首位不能是1
+  int m2 = !!x;       //  x不能是0
+  int m3 = x & (x + (~0));  // 只能出现1个1
+  return !m1 & m2 & !m3;
 }
+
+/*{ // 有1必然是z1（从最高位开始的），1的左边一定是1,0的右边一定是0,而且首位不能是1(0x01除外)
+  int sign_x = (x >> 31) & 0x1;   // 首位不能是1
+  int ifx_1 = x ^ (0x01);         // 0x01除外
+  x &= x >> 16;
+  x &= x >> 8;
+  x &= x >> 4;
+  x &= x >> 2;
+  x &= x >> 1;
+  return ((!!x & !sign_x) | (!!ifx_1));
+}*/
 /* 
  * leastBitPos - return a mask that marks the position of the
  *               least significant 1 bit. If x == 0, return 0
@@ -340,7 +367,19 @@ int logicalShift(int x, int n) {
  *   Rating: 4
  */
 int satAdd(int x, int y) {
-  return 2;
+/*  int sign_x = x >> 31;
+  int sign_y = y >> 31;
+  int sign_sum = (x + y) >> 31;
+  int m1 = sign_x ^ sign_y; //   xy符号相同 -> m1 = 0
+  // x,y异号，则!m1=0,直接返回x+y   !m1|(x+y)
+  int m2 = sign_x ^ sign_sum;
+  int m3 = sign_y ^ sign_sum;
+  // x,y同号（m1=0) 当!m2或!m3有一个为0，溢出，返回sign_x
+  // !m2&!m3=1，直接返回x+y
+*/
+	int ans = x + y;
+	int overFlow = (( x ^ ans) & (y ^ ans)) >> 31;      // of -> 0x111....    not of -> 0
+	return ( ans >> ( overFlow & 31 ) ) + ( overFlow << 31 ) ;
 }
 /* 
  * tc2sm - Convert from two's complement to sign-magnitude 
