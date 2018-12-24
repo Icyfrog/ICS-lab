@@ -1,0 +1,113 @@
+#/* $begin ncopy-ys */
+##################################################################
+# ncopy.ys - Copy a src block of len words to dst.
+# Return the number of positive words (>0) contained in src.
+#
+# Include your name and ID here.
+# Name: Wang XinWei
+# Stu ID: 516030910041
+# Version Ⅰ: (start at 12/19 0:16)		CPE = 12.70
+#		.hcl: Add IADDQA HCL; 	.ys: Use iaddq
+# Version Ⅱ: (start at 12/19 12:00)	    CPE = 12.55
+#		.ys: Optimize jmp
+# Version Ⅲ: (start at 12/19 0:55)		CPE = 9.79
+#		.ys: Use loop unrolling 
+# Version Ⅳ: (start at 12/19 )
+# 
+##################################################################
+# Do not modify this portion
+# Function prologue.
+# %rdi = src, %rsi = dst, %rdx = len, %rax = count
+ncopy:
+    xorq %rax, %rax		# count = 0
+    rrmovq %rdx, %rbx  	# %rbx = %rdx = len
+    iaddq $-8, %rbx     # %rbx = len - 2 (limit)
+	jg Loop				# if limit > 2  goto loop
+	andq %rdx,%rdx		# len <= 0?
+	jg Left				# if not, len > 0, goto Left
+	jle Done			# if not again, goto Done:
+Loop:
+    mrmovq (%rdi), %r8	# read val from src...
+    mrmovq $8(%rdi), %r9	# read val from src...
+    mrmovq $16(%rdi), %r10	# read val from src...
+    mrmovq $24(%rdi), %r11
+    mrmovq $32(%rdi), %r12
+    mrmovq $40(%rdi), %r13
+    mrmovq $48(%rdi), %r14
+    mrmovq $56(%rdi), %rcx
+    mrmovq $64(%rdi), %rbp
+    rmmovq %r8, (%rsi)	# ...and store it to dst
+	rmmovq %r9, $8(%rsi)	# ...and store it to dst
+	rmmovq %r10, $16(%rsi)	# ...and store it to dst
+    rmmovq %r11, $24(%rsi)
+    rmmovq %r12, $32(%rsi)
+    rmmovq %r13, $40(%rsi)
+    rmmovq %r14, $48(%rsi)
+    rmmovq %rcx, $56(%rsi)
+    rmmovq %rbp, $64(%rsi)
+check_r8:
+    andq %r8, %r8		# val <= 0?
+    jle check_r9		# if so, next
+    iaddq $1, %rax		# if not count++
+check_r9:
+    andq %r9, %r9		# val1 >= 0?
+    jle check_r10		# if so, next
+    iaddq $1, %rax		# count++
+check_r10:
+    andq %r10, %r10		# val2 >= 0?
+    jle check_r11			# if so, next
+	iaddq $1, %rax		# if not count++
+check_r11:
+    andq %r11, %r11
+    jle check_r12
+    iaddq $1, %rax
+check_r12:
+    andq %r12, %r12
+    jle check_r13
+    iaddq $1, %rax
+check_r13:
+    andq %r13, %r13
+    jle check_r14
+    iaddq $1, %rax
+check_r14:
+    andq %r14, %r14
+    jle check_rcx
+    iaddq $1, %rax
+check_rcx:
+    andq %rcx, %rcx
+    jle check_rbp
+    iaddq $1, %rax
+check_rbp:
+    andq %rbp, %rbp
+    jle Npos
+    iaddq $1, %rax
+Npos:
+	iaddq $72, %rdi		# src+9
+	iaddq $72, %rsi		# dst+9
+	iaddq $-9, %rdx		# len--
+	iaddq $-9, %rbx		# limit--
+	jg Loop
+	andq %rdx, %rdx
+	jne Left
+	je Done
+
+Left:
+	mrmovq (%rdi), %r10	# read val from src...
+	rmmovq %r10, (%rsi)	# ...and store it to dst
+	andq %r10, %r10		# val <= 0?
+	jle Mpos			# if so, goto Mpos:
+	iaddq $1, %rax		# count++
+Mpos:
+	iaddq $8, %rdi		# src++
+	iaddq $8, %rsi		# dst++
+	iaddq $-1, %rdx		# len--
+	jg Left				
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+Done:
+	ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end ncopy-ys */

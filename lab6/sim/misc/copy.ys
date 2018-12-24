@@ -1,0 +1,53 @@
+# Name: Yuan Qichao
+# Student ID: 516051910027
+
+# Execution begins at address 0
+    .pos 0
+    irmovq stack, %rsp          # Set up stack pointer
+    call main                   # Execute main program
+    halt                        # Terminate program
+
+.align 8
+# Source block
+src:
+    .quad 0x00a
+    .quad 0x0b0
+    .quad 0xc00
+
+# Destination block
+dest:
+    .quad 0x111
+    .quad 0x222
+    .quad 0x333
+
+main:   
+    irmovq src, %rdi            # *src in %rdi
+    irmovq dest, %rsi           # *dest in %rsi
+    irmovq $3, %rdx             # len in %rdx
+    irmovq $8, %r8              # Constant 8
+    irmovq $1, %r9              # Constant 1
+    call copy                   # Invoke copy function
+    ret      
+
+copy:
+    xorq %rax, %rax             # long result = 0
+    andq %rdx, %rdx             # Set CC
+    jmp test
+
+loop:
+    mrmovq (%rdi), %rbx            
+    addq %r8, %rdi
+    rmmovq %rbx, (%rsi)
+    addq %r8, %rsi              # dest++
+    xorq %rbx, %rax             # result ^= val;
+    subq %r9, %rdx              # len--
+    andq %rdx, %rdx             # Set CC
+
+test:
+    jne loop                     # Stop when len = 0
+    ret             
+
+        
+# Stack starts here and grows to lower address
+    .pos 0x200
+stack:
