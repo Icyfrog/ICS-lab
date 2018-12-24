@@ -1,0 +1,247 @@
+#/* $begin ncopy-ys */
+##################################################################
+# ncopy.ys - Copy a src block of len words to dst.
+# Return the number of positive words (>0) contained in src.
+#
+# Include your name and ID here.
+# Name: Wang XinWei
+# Stu ID: 516030910041
+# Version Ⅰ: (start at 12/19 0:16)		CPE = 12.70
+#		.hcl: Add IADDQA HCL; 	.ys: Use iaddq
+# Version Ⅱ: (start at 12/19 12:00)	    CPE = 12.55
+#		.ys: Optimize jmp
+# Version Ⅲ: (start at 12/19 0:55)		CPE = 9.79
+#		.ys: Use loop unrolling 
+# Version Ⅳ: (start at 12/19 )			CPE = 8.5 
+# 		.ys: Use loop unrolling and find k = 8 fits best
+# Version Ⅴ: (start at 12/20 16:10)		CPE = 7.75
+#		.ys: Optimize the sequence of sum and register
+# Version Ⅵ: (start at 12/21 0:07)		CPE = 
+#		.ys: 	
+##################################################################
+# Do not modify this portion
+# Function prologue.
+# %rdi = src, %rsi = dst, %rdx = len, %rax = count
+
+ncopy:
+	xorq %rax, %rax		# count = 0
+	iaddq $-8, %rdx		# if len >= 8, goto loop
+	jge Loop
+	jmp Left_test
+
+Loop:
+    mrmovq (%rdi), %r8		# read val from src...
+    mrmovq $8(%rdi), %r9	# read val from src...
+    mrmovq $16(%rdi), %r10	# read val from src...
+    mrmovq $24(%rdi), %r11
+    mrmovq $32(%rdi), %r12
+    mrmovq $40(%rdi), %r13
+    mrmovq $48(%rdi), %r14
+    mrmovq $56(%rdi), %rcx
+    rmmovq %r8, (%rsi)		# ...and store it to dst
+	rmmovq %r9, $8(%rsi)	# ...and store it to dst
+	rmmovq %r10, $16(%rsi)	# ...and store it to dst
+    rmmovq %r11, $24(%rsi)
+    rmmovq %r12, $32(%rsi)
+    rmmovq %r13, $40(%rsi)
+    rmmovq %r14, $48(%rsi)
+    rmmovq %rcx, $56(%rsi)
+
+#	INSTRUCTION:
+#	reg_xxxx  means this the number of "1", nothing to do
+#	with the elements' sequence
+# 	for example: r11_100 (There are three registers brefore %r11)
+#   means there is a "1" in {%r8, %r9, %r10}.
+#	For the sequence doesn't matter at all to the Add_sum
+
+check_r8:
+    andq %r8, %r8		# val >= 0?
+    jg check_r9_1		# if so, 1, check next
+check_r9_0:
+    andq %r9, %r9		# val1 >= 0?
+    jg check_r10_10		# if so, next
+check_r10_00:
+    andq %r10, %r10		# val2 >= 0?
+    jg check_r11_100			# if so, next
+check_r11_000:
+    andq %r11, %r11
+    jg check_r12_1000
+check_r12_0000:
+    andq %r12, %r12
+    jg check_r13_10000
+check_r13_00000:
+    andq %r13, %r13
+    jg check_r14_100000
+check_r14_000000:
+    andq %r14, %r14
+    jg check_rcx_1000000
+check_rcx_0000000:
+    andq %rcx, %rcx
+    jg  Add_1
+    jmp Npos
+
+check_r9_1:
+	andq %r9, %r9
+	jg check_r10_11
+check_r10_10:
+	andq %r10, %r10
+	jg check_r11_110
+check_r11_100:
+	andq %r11, %r11
+	jg check_r12_1100
+check_r12_1000:
+	andq %r12, %r12
+	jg check_r13_11000
+check_r13_10000:
+	andq %r13, %r13
+	jg check_r14_110000
+check_r14_100000:
+	andq %r14, %r14
+	jg check_rcx_1100000
+check_rcx_1000000:
+	andq %rcx, %rcx
+	jg 	Add_2
+Add_1:
+	iaddq $1, %rax
+	jmp Npos
+
+check_r10_11:
+	andq %r10, %r10
+	jg check_r11_111
+check_r11_110:
+	andq %r11, %r11
+	jg check_r12_1110
+check_r12_1100:
+	andq %r12, %r12
+	jg check_r13_11100
+check_r13_11000:
+	andq %r13, %r13
+	jg check_r14_111000
+check_r14_110000:
+	andq %r14, %r14
+	jg check_rcx_1110000
+check_rcx_1100000:
+	andq %rcx, %rcx
+	jg  Add_3
+Add_2:
+	iaddq $2, %rax
+	jmp Npos
+
+check_r11_111:
+	andq %r11, %r11
+	jg check_r12_1111
+check_r12_1110:
+	andq %r12, %r12
+	jg check_r13_11110
+check_r13_11100:
+	andq %r13, %r13
+	jg check_r14_111100
+check_r14_111000:
+	andq %r14, %r14
+	jg check_rcx_1111000
+check_rcx_1110000:
+	andq %rcx, %rcx
+	jg  Add_4
+Add_3:
+	iaddq $3, %rax
+	jmp Npos
+
+check_r12_1111:
+	andq %r12, %r12
+	jg check_r13_11111
+check_r13_11110:
+	andq %r13, %r13
+	jg check_r14_111110
+check_r14_111100:
+	andq %r14, %r14
+	jg check_rcx_1111100
+check_rcx_1111000:
+    andq %rcx, %rcx
+    jg  Add_5
+Add_4:
+	iaddq $4, %rax
+	jmp Npos
+
+check_r13_11111:
+	andq %r13, %r13
+	jg check_r14_111111
+check_r14_111110:
+	andq %r14, %r14
+	jg check_rcx_1111110
+check_rcx_1111100:
+	andq %rcx, %rcx
+	jg  Add_6
+Add_5:
+	iaddq $5, %rax
+	jmp Npos
+
+check_r14_111111:
+	andq %r14, %r14
+	jg check_rcx_1111111
+check_rcx_1111110:
+	andq %rcx, %rcx
+	jg  Add_7
+Add_6:
+	iaddq $6, %rax
+	jmp Npos
+
+check_rcx_1111111:
+	andq %rcx, %rcx
+	jg  Add_8
+Add_7:
+	iaddq $7, %rax
+	jmp Npos
+
+Add_8:
+	iaddq $8, %rax
+    jmp Npos
+
+Npos:
+	iaddq $64, %rdi		# src+8
+	iaddq $64, %rsi		# dst+8
+	iaddq $-8, %rdx		# len-8
+	jge Loop			# %rdx >=0, 8*1 unrolling again
+
+Left_test:
+	iaddq $6, %rdx 		# if len >= 2
+	jge Left_loop
+	jmp Left_left		# len = 1 or invaild(<=0)
+						# if len = 1, %rdx = -1
+
+Left_loop:
+	mrmovq (%rdi), %r8	# read val from src...
+	mrmovq $8(%rdi), %r9
+	rmmovq %r8, (%rsi)	
+	rmmovq %r9, $8(%rdi)# ...and store it to dst
+	andq %r8, %r8		# val <= 0?
+	jle Left_r9			# if so, goto Mpos:
+	iaddq $1, %rax		# count++
+Left_r9:
+	andq %r9, %r9
+	jle Mpos
+	iaddq $1, %rax
+Mpos:
+	iaddq $16, %rdi		# src++
+	iaddq $16, %rsi		# dst++
+	iaddq $-2, %rdx		# len--
+	jge Left_loop			
+
+Left_left:
+	iaddq $1, %rdx
+	jne Done			# if rdx!=-1, len is invaild
+						# Otherwise len = 1, just copy
+	mrmovq (%rdi), %r8	# read val from src...
+	rmmovq %r8, (%rsi)	# ...and store it to dst
+	andq %r8, %r8		# val <= 0?
+	jle Done			# if so, goto Done:
+	iaddq $1, %rax		# count++
+
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+Done:
+	ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end ncopy-ys */
