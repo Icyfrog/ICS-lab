@@ -1,5 +1,5 @@
 # ICS-lab
-2018 Autumn， Labs of ICS
+2018-2019， Labs of ICS
 ---- 
 
   Lab 1. Bit-levle Ops
